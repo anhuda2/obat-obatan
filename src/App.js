@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Button,
   Modal,
@@ -12,31 +12,36 @@ import {
   Table,
 } from "reactstrap";
 import "./App.css";
+import axios from "axios";
+
+const databaseURL =
+  "https://data-barang-a8cf8-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
 function App() {
   const [modal, setModal] = useState(false);
   const toggleModal = () => setModal(!modal);
 
-  const [obatList, setObatList] = useState([
-    {
-      id: "1",
-      nama: "Paracetamol",
-      jenis: "Analgesik",
-      harga: "Rp 5.000",
-    },
-    {
-      id: "2",
-      nama: "Amoxicillin",
-      jenis: "Antibiotik",
-      harga: "Rp 10.000",
-    },
-    {
-      id: "3",
-      nama: "Cetirizine",
-      jenis: "Antihistamin",
-      harga: "Rp 8.000",
-    },
-  ]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(`${databaseURL}/obatList.json`);
+        const data = response.data;
+        if (data) {
+          const obatArray = Object.keys(data).map((key, index) => ({
+            id: index + 1,
+            ...data[key],
+          }));
+          setObatList(obatArray);
+        }
+      } catch (error) {
+        console.error("Error fetching obat data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const [obatList, setObatList] = useState([]);
   const [newObat, setNewObat] = useState({
     id: undefined,
     nama: "",
@@ -51,43 +56,58 @@ function App() {
     });
   };
 
-  const addObat = (event) => {
+  const addObat = async (event) => {
     event.preventDefault();
-    const id = obatList.length + 1;
-    setObatList([...obatList, { ...newObat, id: id }]);
-    setNewObat({
-      id: undefined,
-      nama: "",
-      jenis: "",
-      harga: "",
-    });
-    toggleModal();
-  };
-
-  const editObat = (event) => {
-    event.preventDefault();
-    const updatedObatList = obatList.map((obat) =>
-      obat.id === newObat.id ? newObat : obat
-    );
-    setObatList(updatedObatList);
-    setNewObat({
-      id: undefined,
-      nama: "",
-      jenis: "",
-      harga: "",
-    });
-    toggleModal();
-  };
-
-  const deleteObat = (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this obat?");
-    if (confirmDelete) {
-      const filteredObatList = obatList.filter((obat) => obat.id !== id);
-      setObatList(filteredObatList);
+    try {
+      const response = await axios.post(`${databaseURL}/obatList.json`, newObat);
+      const id = response.data.name;
+      const numericId = obatList.length + 1;
+      setObatList([...obatList, { ...newObat, id: numericId }]);
+      setNewObat({
+        id: undefined,
+        nama: "",
+        jenis: "",
+        harga: "",
+      });
       toggleModal();
+    } catch (error) {
+      console.error("Error adding obat:", error);
     }
   };
-  
+
+  const editObat = async (event) => {
+    event.preventDefault();
+    try {
+      await axios.put(`${databaseURL}/obatList/${newObat.id}.json`, newObat);
+      const updatedObatList = obatList.map((obat) =>
+        obat.id === newObat.id ? newObat : obat
+      );
+      setObatList(updatedObatList);
+      setNewObat({
+        id: undefined,
+        nama: "",
+        jenis: "",
+        harga: "",
+      });
+      toggleModal();
+    } catch (error) {
+      console.error("Error editing obat:", error);
+    }
+  };
+
+  const deleteObat = async (id) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this obat?");
+    if (confirmDelete) {
+      try {
+        await axios.delete(`${databaseURL}/obatList/${id}.json`);
+        const filteredObatList = obatList.filter((obat) => obat.id !== id);
+        setObatList(filteredObatList);
+        toggleModal();
+      } catch (error) {
+        console.error("Error deleting obat:", error);
+      }
+    }
+  };
 
   return (
     <div className="App">
