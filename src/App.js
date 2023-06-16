@@ -102,12 +102,12 @@ function App() {
         await axios.delete(`${databaseURL}/obatList/${id}.json`);
         const filteredObatList = obatList.filter((obat) => obat.id !== id);
         setObatList(filteredObatList);
-        toggleModal();
       } catch (error) {
         console.error("Error deleting obat:", error);
       }
     }
   };
+  
 
   return (
     <div className="App">
